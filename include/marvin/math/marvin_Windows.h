@@ -10,6 +10,7 @@
 
 #ifndef MARVIN_MATHWINDOWS_H
 #define MARVIN_MATHWINDOWS_H
+#include <marvin/library/marvin_Literals.h>
 #include <marvin/math/marvin_Math.h>
 #include <marvin/library/marvin_Concepts.h>
 #include <numbers>
