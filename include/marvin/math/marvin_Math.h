@@ -96,7 +96,7 @@ namespace marvin::math {
      * \return The RMS of the data given.
      */
     template<FloatType T>
-    [[nodiscard]] T rms(std::span<const T> data) {
+    [[nodiscard]] T rms(std::span<T> data) {
         if (data.empty()) {
             return static_cast<T>(0);
         }
@@ -123,12 +123,12 @@ namespace marvin::math {
      * \return The combined RMS of all data.
      */
     template<FloatType T>
-    [[nodiscard]] T rms(std::span<std::span<const T>> data) {
+    [[nodiscard]] T rms(std::span<std::span<T>> data) {
         if (data.empty()) {
             return static_cast<T>(0);
         }
 
-        const auto getChannelMean = [] (std::span<const T> channel) -> T {
+        const auto getChannelMean = [] (std::span<T> channel) -> T {
             if (channel.empty()) {
                 return static_cast<T>(0);
             }
