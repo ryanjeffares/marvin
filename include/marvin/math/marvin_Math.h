@@ -90,6 +90,63 @@ namespace marvin::math {
     }
 
     /**
+     * Finds the RMS (root mean square) of an array-like of floating point values. In the case of a 0-sized array, 0
+     * be returned.
+     * \param data The data to find the RMS of.
+     * \return The RMS of the data given.
+     */
+    template<FloatType T>
+    [[nodiscard]] T rms(std::span<const T> data) {
+        if (data.empty()) {
+            return static_cast<T>(0);
+        }
+
+        const auto sum = std::accumulate(data.begin(), data.end(), static_cast<T>(0), [] (auto acc, auto next) {
+            return acc + next * next;
+        });
+        const auto mean = sum / static_cast<T>(data.size());
+        return std::sqrt(mean);
+    }
+
+    /**
+     * Finds the RMS (root mean square) of a multidimensional array of floating point values. Can be used to find the
+     * RMS of stereo audio as a single value. In such a case, the combined RMS is calculated as:
+     *
+     * ```
+     * RMS_stereo = sqrt((RMS_l^2 + RMS_r^2) / 2)
+     * ```
+     *
+     * In the case of a 0-sized outer array, 0 is returned. If the size of one of the inner arrays is 0, 0 is used in
+     * the calculation for that array.
+     *
+     * \param data An array-like of array-likes of floating point values to find the RMS of.
+     * \return The combined RMS of all data.
+     */
+    template<FloatType T>
+    [[nodiscard]] T rms(std::span<std::span<const T>> data) {
+        if (data.empty()) {
+            return static_cast<T>(0);
+        }
+
+        const auto getChannelMean = [] (std::span<const T> channel) -> T {
+            if (channel.empty()) {
+                return static_cast<T>(0);
+            }
+
+            const auto sum = std::accumulate(channel.begin(), channel.end(), static_cast<T>(0), [] (auto acc, auto next) {
+                return acc + next * next;
+            });
+            return sum / static_cast<T>(channel.size());
+        };
+
+        const auto sum = std::accumulate(data.begin(), data.end(), static_cast<T>(0), [&] (auto acc, const auto& next) {
+            return acc + getChannelMean(next);
+        });
+        const auto mean = sum / static_cast<T>(data.size());
+        return std::sqrt(mean);
+    }
+
+    /**
         Takes an array-like of complexes represented as `[re, im, re, im, ... im]` of size `N` and creates
         a non-owning view treating the interleaved stream as an array-like of type `std::complex<T>` `N/2` points long,
         with no copies or allocations.<br>
