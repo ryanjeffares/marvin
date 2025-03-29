@@ -9,6 +9,8 @@
 // ========================================================================================================
 
 #include "catch2/matchers/internal/catch_matchers_impl.hpp"
+#include <marvin/containers/marvin_BufferView.h>
+#include <marvin/dsp/oscillators/marvin_Oscillator.h>
 #include <marvin/library/marvin_Concepts.h>
 #include <marvin/math/marvin_Math.h>
 #include <marvin/utils/marvin_Utils.h>
@@ -43,4 +45,54 @@ namespace marvin::testing {
         }
     }
 
+    TEST_CASE("Test rms") {
+        const std::size_t numChannels = 2;
+        const std::size_t numSamples = 4096;
+
+        auto data = new float*[numChannels];
+        data[0] = new float[numSamples];
+        data[1] = new float[numSamples];
+        containers::BufferView<float> buffer{ data, numChannels, numSamples };
+
+        {
+            dsp::oscillators::SineOscillator<float> sine;
+            for (std::size_t i = 0; i < numSamples; i++) {
+                data[0][i] = sine(static_cast<float>(i) / static_cast<float>(numSamples));
+                data[1][i] = sine(static_cast<float>(i) / static_cast<float>(numSamples));
+            }
+
+            const auto expected = 1.0f / std::sqrt(2.0f);
+            for (std::size_t i = 0; i < numChannels; i++) {
+                const auto rms = math::rms(buffer[i]);
+                REQUIRE_THAT(rms, Catch::Matchers::WithinRel(expected));
+            }
+
+            std::array<std::span<float>, 2> view{ buffer[0], buffer[1] };
+            const auto rms = math::rms(std::span<std::span<float>>{ view });
+            REQUIRE_THAT(rms, Catch::Matchers::WithinRel(expected));
+        }
+
+        {
+            dsp::oscillators::SawOscillator<float> saw;
+            for (std::size_t i = 0; i < numSamples; i++) {
+                data[0][i] = saw(static_cast<float>(i) / static_cast<float>(numSamples));
+                data[1][i] = saw(static_cast<float>(i) / static_cast<float>(numSamples));
+            }
+
+            const auto expected = 1.0f / std::sqrt(3.0f);
+            for (std::size_t i = 0; i < numChannels; i++) {
+                const auto rms = math::rms(buffer[i]);
+                REQUIRE_THAT(rms, Catch::Matchers::WithinRel(expected));
+            }
+
+            std::array<std::span<float>, 2> view{ buffer[0], buffer[1] };
+            const auto rms = math::rms(std::span<std::span<float>>{ view });
+            REQUIRE_THAT(rms, Catch::Matchers::WithinRel(expected));
+        }
+
+        for (std::size_t i = 0; i < numChannels; i++) {
+            delete[] data[i];
+        }
+        delete[] data;
+    }
 } // namespace marvin::testing
